@@ -135,6 +135,31 @@ Response:
 
 `bridgeToken` is returned only when the account is created or when the bridge token is rotated. The backend stores only its hash.
 
+### Rotate / Generate Bridge Token
+
+`POST /accounts/{accountId}/bridge-token/rotate`
+
+Use this when the user missed the one-time token dialog or needs to connect the VPS bridge again.
+
+Response:
+
+```json
+{
+  "account": {
+    "id": "acc_123",
+    "label": "Exness Gold Cent",
+    "platform": "MT4",
+    "broker": "Exness-MT4Real",
+    "accountNumber": "12345678",
+    "symbol": "EURUSDm",
+    "magicNumber": 26091705,
+    "connected": false,
+    "botStatus": "OFF",
+    "bridgeToken": "shown-only-once-save-this-on-vps"
+  }
+}
+```
+
 ### Delete Account
 
 `DELETE /accounts/{accountId}`

@@ -213,6 +213,18 @@ final class ApiClient {
         delete("/accounts/" + encodePath(accountId), token, json -> callback.onSuccess(parseAccounts(json)), callback);
     }
 
+    void rotateBridgeToken(String token, String accountId, Callback<TradingAccount> callback) {
+        if (demoMode) {
+            TradingAccount account = findDemoAccount(token, accountId);
+            TradingAccount copy = copyAccount(account);
+            copy.bridgeToken = "demo-bridge-token-" + System.currentTimeMillis();
+            callback.onSuccess(copy);
+            return;
+        }
+        post("/accounts/" + encodePath(accountId) + "/bridge-token/rotate", token, new JSONObject(),
+                json -> callback.onSuccess(parseTradingAccount(json.optJSONObject("account"))), callback);
+    }
+
     void loadDashboard(String token, String accountId, Callback<DashboardState> callback) {
         if (demoMode) {
             callback.onSuccess(demoDashboard(token, accountId));

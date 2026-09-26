@@ -209,13 +209,16 @@ public final class MainActivity extends Activity implements BillingManager.Liste
             accountCard.addView(line("Magic: " + account.magicNumber + " | Status: " + account.botStatus));
             accountCard.addView(statusText(account.connected ? "EA bridge online" : "EA bridge offline", account.connected ? GREEN : RED));
             Button open = primaryButton("Open Dashboard");
+            Button bridgeToken = secondaryButton("Generate Bridge Token");
             Button delete = dangerOutlineButton("Delete Account");
             accountCard.addView(open);
+            accountCard.addView(bridgeToken);
             accountCard.addView(delete);
             open.setOnClickListener(v -> {
                 selectedAccountId = account.id;
                 showDashboard(account.id);
             });
+            bridgeToken.setOnClickListener(v -> confirmRotateBridgeToken(account));
             delete.setOnClickListener(v -> confirmDeleteAccount(account));
         }
 
@@ -248,6 +251,20 @@ public final class MainActivity extends Activity implements BillingManager.Liste
                         }
                         toast("Account deleted.");
                         renderAccounts(accounts);
+                    }
+                }))
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void confirmRotateBridgeToken(ApiClient.TradingAccount account) {
+        new AlertDialog.Builder(this)
+                .setTitle("Generate bridge token?")
+                .setMessage("This creates a new VPS bridge token for " + account.label + ". If an old bridge token was used before, replace it in MT4 after generating the new one.")
+                .setPositiveButton("Generate", (dialog, which) -> api.rotateBridgeToken(token(), account.id, new UiCallback<ApiClient.TradingAccount>() {
+                    @Override
+                    public void success(ApiClient.TradingAccount value) {
+                        showBridgeToken(value);
                     }
                 }))
                 .setNegativeButton("Cancel", null)
@@ -299,6 +316,7 @@ public final class MainActivity extends Activity implements BillingManager.Liste
                 toast("Account label and account number are required.");
                 return;
             }
+            save.setEnabled(false);
             ApiClient.TradingAccount account = new ApiClient.TradingAccount();
             account.label = labelInput.getText().toString().trim();
             account.platform = platformInput.getText().toString().trim().toUpperCase(Locale.US);
@@ -315,6 +333,12 @@ public final class MainActivity extends Activity implements BillingManager.Liste
                     } else {
                         showDashboard(value.id);
                     }
+                }
+
+                @Override
+                public void error(String message) {
+                    save.setEnabled(true);
+                    super.error(message);
                 }
             });
         });
