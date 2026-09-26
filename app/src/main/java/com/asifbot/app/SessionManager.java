@@ -59,8 +59,8 @@ final class SessionManager {
         editor.apply();
     }
 
-    void saveBot(ApiClient.BotState state) {
-        prefs.edit().putBoolean(BOT_ENABLED, state.enabled).apply();
+    void saveBotEnabled(boolean enabled) {
+        prefs.edit().putBoolean(BOT_ENABLED, enabled).apply();
     }
 
     void clear() {
