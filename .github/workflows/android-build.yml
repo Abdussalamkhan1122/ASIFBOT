@@ -27,10 +27,13 @@ jobs:
         with:
           gradle-version: "9.4.1"
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Install Android SDK package
         run: |
-          yes | sdkmanager --licenses
-          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Build debug APK and release bundle
         run: gradle --no-daemon :app:assembleDebug :app:bundleRelease
