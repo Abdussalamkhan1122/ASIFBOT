@@ -4,12 +4,12 @@ plugins {
 
 android {
     namespace = "com.asifbot.app"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.asifbot.app"
         minSdk = 23
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
 
@@ -23,5 +23,5 @@ android {
 }
 
 dependencies {
-    implementation("com.android.billingclient:billing:9.1.0")
+    implementation("com.android.billingclient:billing:8.0.0")
 }

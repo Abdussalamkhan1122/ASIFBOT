@@ -14,8 +14,8 @@ ASIFBOT is the Android control app for your trading bot. It includes:
 - App name: `ASIFBOT`
 - Subscription product id: `asifbot_monthly`
 - Backend URL: `https://api.asifbot.com`
-- Target SDK: Android 16 / API 36
-- Play Billing Library: `9.1.0`
+- Target SDK: API 35
+- Play Billing Library: `8.0.0`
 
 ## Play Console Setup
 
