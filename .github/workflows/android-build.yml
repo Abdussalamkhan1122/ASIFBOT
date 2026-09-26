@@ -34,9 +34,15 @@ jobs:
           gradle --no-daemon :app:assembleDebug :app:bundleRelease --stacktrace --info 2>&1 | tee build-log.txt
           status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
+            echo "---- Build error summary ----"
+            grep -n -i -E 'FAILURE|What went wrong|Execution failed|Could not|error:|Caused by|Exception|Required|installed|compileSdk|Android SDK|failed' build-log.txt | head -n 80 > failure-summary.txt || true
+            if [ ! -s failure-summary.txt ]; then
+              tail -n 80 build-log.txt > failure-summary.txt
+            fi
+            cat failure-summary.txt
             echo "---- Last build log lines ----"
             tail -n 120 build-log.txt
-            message=$(tail -n 60 build-log.txt | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
+            message=$(cat failure-summary.txt | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
             echo "::error title=Gradle build failed::$message"
             exit "$status"
           fi
