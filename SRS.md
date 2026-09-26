@@ -88,6 +88,7 @@ Requirements:
 - Monthly subscription product.
 - Backend must verify Google Play purchase token.
 - User access must be blocked after trial/subscription expiry.
+- Login/signup screen must clearly show trial and subscription access.
 
 ### FR-04 Add Trading Account
 
@@ -108,6 +109,8 @@ The app should not store the MT4/MT5 trading password unless absolutely required
 
 The app must show all linked trading accounts.
 
+Accounts must be isolated per logged-in user. If a different email logs in, the previous user's accounts and selected dashboard must not appear.
+
 Each account card must show:
 
 - Account label
@@ -117,6 +120,9 @@ Each account card must show:
 - Bot status: ON / OFF / Closing / Error
 - Balance
 - Equity
+- Delete account action
+
+Delete removes only the linked ASIFBOT account record. It must not delete the real broker account.
 - Floating profit/loss
 - Open trade count
 
@@ -440,11 +446,15 @@ Purpose:
 
 Allow user to sign in or create a new trial account.
 
+This screen must show that new users receive a 3-day trial and that continued bot control requires an active subscription.
+
 ### Screen 2: Account List
 
 Purpose:
 
 Show all linked MT4/MT5 accounts.
+
+This screen must allow the user to delete a linked account after confirmation.
 
 ### Screen 3: Add Account
 
@@ -506,6 +516,8 @@ The project is acceptable when:
 - Trial starts for 3 days.
 - Subscription unlocks access.
 - User can add MT4/MT5 account.
+- User can delete a linked account.
+- New login email cannot see the previous user's accounts.
 - Dashboard shows bot/account status.
 - Open trades and floating loss are visible.
 - ON enables bot trading.

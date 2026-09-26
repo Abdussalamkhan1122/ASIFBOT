@@ -131,6 +131,9 @@ public final class MainActivity extends Activity implements BillingManager.Liste
         card.addView(register);
         card.addView(forgot);
 
+        body.addView(infoCard("3-Day Trial + Subscription",
+                "New users can create an account with a 3-day free trial. After the trial, ASIFBOT control requires an active subscription."));
+
         login.setOnClickListener(v -> authenticate(false, email.getText().toString(), password.getText().toString()));
         register.setOnClickListener(v -> authenticate(true, email.getText().toString(), password.getText().toString()));
         forgot.setOnClickListener(v -> toast("Password reset will be available when backend email is connected."));
@@ -147,6 +150,7 @@ public final class MainActivity extends Activity implements BillingManager.Liste
             public void success(ApiClient.AccountState value) {
                 accountState = value;
                 session.save(value);
+                selectedAccountId = "";
                 showAccounts();
             }
         };
@@ -192,6 +196,10 @@ public final class MainActivity extends Activity implements BillingManager.Liste
             body.addView(infoCard("Demo Mode", "The app is using local demo data. Real MT4/MT5 control starts after backend and EA bridge are connected."));
         }
 
+        if (accounts.isEmpty()) {
+            body.addView(infoCard("No Trading Accounts", "Add your MT4/MT5 account to connect it with the ASIFBOT VPS/EA bridge."));
+        }
+
         for (ApiClient.TradingAccount account : accounts) {
             LinearLayout accountCard = card();
             body.addView(accountCard);
@@ -201,11 +209,14 @@ public final class MainActivity extends Activity implements BillingManager.Liste
             accountCard.addView(line("Magic: " + account.magicNumber + " | Status: " + account.botStatus));
             accountCard.addView(statusText(account.connected ? "EA bridge online" : "EA bridge offline", account.connected ? GREEN : RED));
             Button open = primaryButton("Open Dashboard");
+            Button delete = dangerOutlineButton("Delete Account");
             accountCard.addView(open);
+            accountCard.addView(delete);
             open.setOnClickListener(v -> {
                 selectedAccountId = account.id;
                 showDashboard(account.id);
             });
+            delete.setOnClickListener(v -> confirmDeleteAccount(account));
         }
 
         Button add = primaryButton("Add MT4/MT5 Account");
@@ -223,6 +234,24 @@ public final class MainActivity extends Activity implements BillingManager.Liste
             selectedAccountId = "";
             showLogin();
         });
+    }
+
+    private void confirmDeleteAccount(ApiClient.TradingAccount account) {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete account?")
+                .setMessage("This removes " + account.label + " from this ASIFBOT login.\n\nIt does not delete the real broker account. If the bot is running on VPS, turn it OFF first so open trades can be closed safely.")
+                .setPositiveButton("Delete", (dialog, which) -> api.deleteAccount(token(), account.id, new UiCallback<ArrayList<ApiClient.TradingAccount>>() {
+                    @Override
+                    public void success(ArrayList<ApiClient.TradingAccount> accounts) {
+                        if (account.id.equals(selectedAccountId)) {
+                            selectedAccountId = "";
+                        }
+                        toast("Account deleted.");
+                        renderAccounts(accounts);
+                    }
+                }))
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     private void showAddAccount() {

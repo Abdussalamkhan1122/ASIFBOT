@@ -101,7 +101,7 @@ final class ApiClient {
     private final String baseUrl;
     private final boolean demoMode;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
-    private final ArrayList<TradingAccount> demoAccounts = new ArrayList<>();
+    private final Map<String, ArrayList<TradingAccount>> demoAccountsByUser = new HashMap<>();
     private final Map<String, Boolean> demoBotState = new HashMap<>();
     private final Map<String, String> demoCommandState = new HashMap<>();
 
@@ -149,7 +149,7 @@ final class ApiClient {
 
     void loadMe(String token, Callback<AccountState> callback) {
         if (demoMode) {
-            callback.onSuccess(demoAccount(emailFromDemoToken(token), false, anyDemoBotEnabled()));
+            callback.onSuccess(demoAccount(emailFromDemoToken(token), false, anyDemoBotEnabled(token)));
             return;
         }
         get("/me", token, json -> callback.onSuccess(parseAccount(json)), callback);
@@ -157,7 +157,7 @@ final class ApiClient {
 
     void verifyPurchase(String token, String productId, String purchaseToken, Callback<AccountState> callback) {
         if (demoMode) {
-            callback.onSuccess(demoAccount(emailFromDemoToken(token), true, anyDemoBotEnabled()));
+            callback.onSuccess(demoAccount(emailFromDemoToken(token), true, anyDemoBotEnabled(token)));
             return;
         }
         JSONObject body = new JSONObject();
@@ -174,8 +174,8 @@ final class ApiClient {
 
     void listAccounts(String token, Callback<ArrayList<TradingAccount>> callback) {
         if (demoMode) {
-            seedDemoAccounts();
-            callback.onSuccess(copyAccounts(demoAccounts));
+            ArrayList<TradingAccount> accounts = demoAccountsForToken(token);
+            callback.onSuccess(copyAccounts(accounts));
             return;
         }
         get("/accounts", token, json -> callback.onSuccess(parseAccounts(json)), callback);
@@ -183,11 +183,11 @@ final class ApiClient {
 
     void createAccount(String token, TradingAccount account, Callback<TradingAccount> callback) {
         if (demoMode) {
-            seedDemoAccounts();
-            account.id = "demo-" + (demoAccounts.size() + 1);
+            ArrayList<TradingAccount> accounts = demoAccountsForToken(token);
+            account.id = userKey(token) + "-account-" + (accounts.size() + 1);
             account.connected = true;
             account.botStatus = "OFF";
-            demoAccounts.add(account);
+            accounts.add(account);
             demoBotState.put(account.id, false);
             demoCommandState.put(account.id, "Ready");
             callback.onSuccess(copyAccount(account));
@@ -196,18 +196,33 @@ final class ApiClient {
         post("/accounts", token, accountToJson(account), json -> callback.onSuccess(parseTradingAccount(json.optJSONObject("account"))), callback);
     }
 
-    void loadDashboard(String token, String accountId, Callback<DashboardState> callback) {
+    void deleteAccount(String token, String accountId, Callback<ArrayList<TradingAccount>> callback) {
         if (demoMode) {
-            seedDemoAccounts();
-            callback.onSuccess(demoDashboard(accountId));
+            ArrayList<TradingAccount> accounts = demoAccountsForToken(token);
+            for (int i = accounts.size() - 1; i >= 0; i--) {
+                if (accounts.get(i).id.equals(accountId)) {
+                    accounts.remove(i);
+                }
+            }
+            demoBotState.remove(accountId);
+            demoCommandState.remove(accountId);
+            callback.onSuccess(copyAccounts(accounts));
             return;
         }
-        get("/accounts/" + encodePath(accountId) + "/metrics", token, json -> callback.onSuccess(parseDashboard(json, accountId)), callback);
+        delete("/accounts/" + encodePath(accountId), token, json -> callback.onSuccess(parseAccounts(json)), callback);
+    }
+
+    void loadDashboard(String token, String accountId, Callback<DashboardState> callback) {
+        if (demoMode) {
+            callback.onSuccess(demoDashboard(token, accountId));
+            return;
+        }
+        get("/accounts/" + encodePath(accountId) + "/dashboard", token, json -> callback.onSuccess(parseDashboard(json, accountId)), callback);
     }
 
     void loadOpenTrades(String token, String accountId, Callback<ArrayList<TradePosition>> callback) {
         if (demoMode) {
-            callback.onSuccess(demoDashboard(accountId).trades);
+            callback.onSuccess(demoDashboard(token, accountId).trades);
             return;
         }
         get("/accounts/" + encodePath(accountId) + "/trades/open", token, json -> callback.onSuccess(parseTrades(json.optJSONArray("trades"))), callback);
@@ -217,7 +232,7 @@ final class ApiClient {
         if (demoMode) {
             demoBotState.put(accountId, true);
             demoCommandState.put(accountId, "ON confirmed by demo bridge");
-            callback.onSuccess(demoDashboard(accountId));
+            callback.onSuccess(demoDashboard(token, accountId));
             return;
         }
         JSONObject body = new JSONObject();
@@ -228,7 +243,7 @@ final class ApiClient {
         if (demoMode) {
             demoCommandState.put(accountId, "OFF completed: trades closed and pending orders deleted");
             demoBotState.put(accountId, false);
-            callback.onSuccess(demoDashboard(accountId));
+            callback.onSuccess(demoDashboard(token, accountId));
             return;
         }
         JSONObject body = new JSONObject();
@@ -247,7 +262,7 @@ final class ApiClient {
         if (demoMode) {
             demoCommandState.put(accountId, "Emergency close completed");
             demoBotState.put(accountId, false);
-            callback.onSuccess(demoDashboard(accountId));
+            callback.onSuccess(demoDashboard(token, accountId));
             return;
         }
         JSONObject body = new JSONObject();
@@ -262,6 +277,10 @@ final class ApiClient {
 
     private void get(String path, String token, JsonHandler handler, Callback<?> callback) {
         io.execute(() -> runRequest("GET", path, token, null, handler, callback));
+    }
+
+    private void delete(String path, String token, JsonHandler handler, Callback<?> callback) {
+        io.execute(() -> runRequest("DELETE", path, token, null, handler, callback));
     }
 
     private void post(String path, String token, JSONObject body, JsonHandler handler, Callback<?> callback) {
@@ -426,8 +445,9 @@ final class ApiClient {
 
     private void demoLogin(String email, Callback<AccountState> callback) {
         String safeEmail = email == null || email.trim().isEmpty() ? "demo@asifbot.local" : email.trim();
-        seedDemoAccounts();
-        callback.onSuccess(demoAccount(safeEmail, false, anyDemoBotEnabled()));
+        String token = "demo:" + encode(safeEmail);
+        demoAccountsForToken(token);
+        callback.onSuccess(demoAccount(safeEmail, false, anyDemoBotEnabled(token)));
     }
 
     private AccountState demoAccount(String email, boolean subscriptionActive, boolean botEnabled) {
@@ -440,12 +460,15 @@ final class ApiClient {
         return state;
     }
 
-    private void seedDemoAccounts() {
-        if (!demoAccounts.isEmpty()) {
-            return;
+    private ArrayList<TradingAccount> demoAccountsForToken(String token) {
+        String key = userKey(token);
+        ArrayList<TradingAccount> existing = demoAccountsByUser.get(key);
+        if (existing != null) {
+            return existing;
         }
+        ArrayList<TradingAccount> accounts = new ArrayList<>();
         TradingAccount account = new TradingAccount();
-        account.id = "demo-gold-1";
+        account.id = key + "-gold-1";
         account.label = "Exness Gold Cent";
         account.platform = "MT4";
         account.broker = "Exness-MT4 Trial";
@@ -454,14 +477,15 @@ final class ApiClient {
         account.magicNumber = 7777;
         account.connected = true;
         account.botStatus = "ON";
-        demoAccounts.add(account);
+        accounts.add(account);
+        demoAccountsByUser.put(key, accounts);
         demoBotState.put(account.id, true);
         demoCommandState.put(account.id, "ON confirmed by demo bridge");
+        return accounts;
     }
 
-    private DashboardState demoDashboard(String accountId) {
-        seedDemoAccounts();
-        TradingAccount account = findDemoAccount(accountId);
+    private DashboardState demoDashboard(String token, String accountId) {
+        TradingAccount account = findDemoAccount(token, accountId);
         boolean enabled = Boolean.TRUE.equals(demoBotState.get(account.id));
         account.botStatus = enabled ? "ON" : "OFF";
 
@@ -512,23 +536,41 @@ final class ApiClient {
         return trade;
     }
 
-    private TradingAccount findDemoAccount(String id) {
-        seedDemoAccounts();
-        for (TradingAccount account : demoAccounts) {
+    private TradingAccount findDemoAccount(String token, String id) {
+        ArrayList<TradingAccount> accounts = demoAccountsForToken(token);
+        for (TradingAccount account : accounts) {
             if (account.id.equals(id)) {
                 return account;
             }
         }
-        return demoAccounts.get(0);
+        if (accounts.isEmpty()) {
+            TradingAccount account = new TradingAccount();
+            account.id = userKey(token) + "-empty";
+            account.label = "No Account";
+            account.platform = "MT4";
+            account.broker = "";
+            account.accountNumber = "";
+            account.symbol = "XAUUSDc";
+            account.magicNumber = 0;
+            account.connected = false;
+            account.botStatus = "OFF";
+            return account;
+        }
+        return accounts.get(0);
     }
 
-    private boolean anyDemoBotEnabled() {
-        for (Boolean enabled : demoBotState.values()) {
-            if (Boolean.TRUE.equals(enabled)) {
+    private boolean anyDemoBotEnabled(String token) {
+        for (TradingAccount account : demoAccountsForToken(token)) {
+            if (Boolean.TRUE.equals(demoBotState.get(account.id))) {
                 return true;
             }
         }
         return false;
+    }
+
+    private static String userKey(String token) {
+        String email = emailFromDemoToken(token);
+        return encode(email.toLowerCase(Locale.US)).replace("+", "_").replace("%", "_");
     }
 
     private static ArrayList<TradingAccount> copyAccounts(ArrayList<TradingAccount> source) {
