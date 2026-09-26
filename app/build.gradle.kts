@@ -13,9 +13,9 @@ android {
         versionCode = 4
         versionName = "1.2.0"
 
-        buildConfigField("String", "API_BASE_URL", "\"https://api.asifbot.com\"")
+        buildConfigField("String", "API_BASE_URL", "\"https://backed-expenses-cast-boulder.trycloudflare.com\"")
         buildConfigField("String", "SUBSCRIPTION_PRODUCT_ID", "\"asifbot_monthly\"")
-        buildConfigField("boolean", "DEMO_MODE", "true")
+        buildConfigField("boolean", "DEMO_MODE", "false")
     }
 
     buildFeatures {
