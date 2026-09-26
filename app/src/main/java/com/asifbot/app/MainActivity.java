@@ -38,7 +38,7 @@ public final class MainActivity extends Activity implements BillingManager.Liste
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         session = new SessionManager(this);
-        api = new ApiClient(BuildConfig.API_BASE_URL);
+        api = new ApiClient(BuildConfig.API_BASE_URL, BuildConfig.DEMO_MODE);
         billing = new BillingManager(this, BuildConfig.SUBSCRIPTION_PRODUCT_ID, this);
         billing.start();
 
@@ -81,7 +81,9 @@ public final class MainActivity extends Activity implements BillingManager.Liste
     private void showLogin() {
         LinearLayout card = baseScreen();
         addTitle(card, "ASIFBOT");
-        addSubtitle(card, "Login to control your trading bot from your phone.");
+        addSubtitle(card, api.isDemoMode()
+                ? "Test login is active. Backend connection will be added before release."
+                : "Login to control your trading bot from your phone.");
 
         EditText email = input("Email");
         email.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
@@ -252,16 +254,17 @@ public final class MainActivity extends Activity implements BillingManager.Liste
 
     private LinearLayout baseScreen() {
         ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
         scroll.setBackgroundColor(BG);
         LinearLayout outer = new LinearLayout(this);
         outer.setOrientation(LinearLayout.VERTICAL);
         outer.setGravity(Gravity.CENTER_HORIZONTAL);
-        outer.setPadding(dp(20), dp(32), dp(20), dp(32));
+        outer.setPadding(dp(18), dp(22), dp(18), dp(22));
         scroll.addView(outer);
 
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL);
-        card.setPadding(dp(22), dp(22), dp(22), dp(22));
+        card.setPadding(dp(20), dp(20), dp(20), dp(20));
         card.setBackgroundColor(PANEL);
         outer.addView(card, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 

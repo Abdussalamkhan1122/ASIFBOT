@@ -10,6 +10,8 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -52,13 +54,20 @@ final class ApiClient {
     }
 
     private final String baseUrl;
+    private final boolean demoMode;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
+    private boolean demoBotEnabled;
 
-    ApiClient(String baseUrl) {
+    ApiClient(String baseUrl, boolean demoMode) {
         this.baseUrl = trimTrailingSlash(baseUrl);
+        this.demoMode = demoMode;
     }
 
     void login(String email, String password, Callback<AccountState> callback) {
+        if (demoMode) {
+            demoLogin(email, callback);
+            return;
+        }
         JSONObject body = new JSONObject();
         try {
             body.put("email", email);
@@ -71,6 +80,10 @@ final class ApiClient {
     }
 
     void register(String email, String password, Callback<AccountState> callback) {
+        if (demoMode) {
+            demoLogin(email, callback);
+            return;
+        }
         JSONObject body = new JSONObject();
         try {
             body.put("email", email);
@@ -84,14 +97,27 @@ final class ApiClient {
     }
 
     void loadMe(String token, Callback<AccountState> callback) {
+        if (demoMode) {
+            callback.onSuccess(demoAccount(emailFromDemoToken(token), false, demoBotEnabled));
+            return;
+        }
         get("/me", token, json -> callback.onSuccess(parseAccount(json)), callback);
     }
 
     void loadBot(String token, Callback<BotState> callback) {
+        if (demoMode) {
+            callback.onSuccess(demoBot(demoBotEnabled));
+            return;
+        }
         get("/bot/status", token, json -> callback.onSuccess(parseBot(json)), callback);
     }
 
     void setBotEnabled(String token, boolean enabled, Callback<BotState> callback) {
+        if (demoMode) {
+            demoBotEnabled = enabled;
+            callback.onSuccess(demoBot(demoBotEnabled));
+            return;
+        }
         JSONObject body = new JSONObject();
         try {
             body.put("enabled", enabled);
@@ -103,6 +129,10 @@ final class ApiClient {
     }
 
     void verifyPurchase(String token, String productId, String purchaseToken, Callback<AccountState> callback) {
+        if (demoMode) {
+            callback.onSuccess(demoAccount(emailFromDemoToken(token), true, true));
+            return;
+        }
         JSONObject body = new JSONObject();
         try {
             body.put("platform", "google_play");
@@ -113,6 +143,10 @@ final class ApiClient {
             return;
         }
         post("/billing/google/verify", token, body, json -> callback.onSuccess(parseAccount(json)), callback);
+    }
+
+    boolean isDemoMode() {
+        return demoMode;
     }
 
     private interface JsonHandler {
@@ -172,6 +206,53 @@ final class ApiClient {
         state.trialEndsAtMs = json.optLong("trialEndsAtMs", 0L);
         state.botEnabled = json.optBoolean("botEnabled", false);
         return state;
+    }
+
+    private void demoLogin(String email, Callback<AccountState> callback) {
+        String safeEmail = email == null || email.trim().isEmpty() ? "demo@asifbot.local" : email.trim();
+        callback.onSuccess(demoAccount(safeEmail, false, false));
+    }
+
+    private static AccountState demoAccount(String email, boolean subscriptionActive, boolean botEnabled) {
+        AccountState state = new AccountState();
+        state.email = email == null || email.isEmpty() ? "demo@asifbot.local" : email;
+        state.token = "demo:" + encode(state.email);
+        state.subscriptionActive = subscriptionActive;
+        state.trialEndsAtMs = System.currentTimeMillis() + 3L * 24L * 60L * 60L * 1000L;
+        state.botEnabled = botEnabled;
+        return state;
+    }
+
+    private static BotState demoBot(boolean enabled) {
+        BotState state = new BotState();
+        state.enabled = enabled;
+        state.serverStatus = "demo mode";
+        state.lastSeen = "local test only";
+        state.account = "backend not connected";
+        return state;
+    }
+
+    private static String emailFromDemoToken(String token) {
+        if (token != null && token.startsWith("demo:")) {
+            return decode(token.substring(5));
+        }
+        return "demo@asifbot.local";
+    }
+
+    private static String encode(String value) {
+        try {
+            return URLEncoder.encode(value, "UTF-8");
+        } catch (Exception e) {
+            return value;
+        }
+    }
+
+    private static String decode(String value) {
+        try {
+            return URLDecoder.decode(value, "UTF-8");
+        } catch (Exception e) {
+            return value;
+        }
     }
 
     private static BotState parseBot(JSONObject json) {

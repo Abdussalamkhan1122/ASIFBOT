@@ -14,6 +14,7 @@ ASIFBOT is the Android control app for your trading bot. It includes:
 - App name: `ASIFBOT`
 - Subscription product id: `asifbot_monthly`
 - Backend URL: `https://api.asifbot.com`
+- Demo mode: `true` for APK testing without a backend
 - Target SDK: API 35
 - Play Billing Library: `8.0.0`
 
@@ -36,6 +37,8 @@ ASIFBOT Android app -> HTTPS backend -> VPS/EA bridge -> MT4/MT5 Expert Advisor
 ```
 
 The EA or bridge must poll your backend for `enabled=true/false`, then allow or pause new trades. The Android app is already wired for that backend contract in `API_CONTRACT.md`.
+
+For phone testing, the app currently uses `DEMO_MODE=true` in `app/build.gradle.kts`. That makes login/create-account work locally and prevents the placeholder `api.asifbot.com` error. Before Play Store release with real bot control, set `DEMO_MODE=false` and connect `API_BASE_URL` to your real backend.
 
 ## Build Notes
 
