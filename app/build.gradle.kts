@@ -10,8 +10,8 @@ android {
         applicationId = "com.asifbot.app"
         minSdk = 23
         targetSdk = 35
-        versionCode = 5
-        versionName = "1.2.1"
+        versionCode = 6
+        versionName = "1.2.2"
 
         buildConfigField("String", "API_BASE_URL", "\"https://backed-expenses-cast-boulder.trycloudflare.com\"")
         buildConfigField("String", "SUBSCRIPTION_PRODUCT_ID", "\"asifbot_monthly\"")

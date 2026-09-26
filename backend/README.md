@@ -108,8 +108,8 @@ When the Android app creates a trading account in real mode, the backend returns
 
 Save:
 
-- Account ID
-- Bridge Token
+- Bridge Account ID, for example `BRG-6M8Q2A`
+- Bridge Token, for example `BOT-3F7K-9D2M-Q8LP`
 
 These two values must be placed on the VPS bridge.
 
@@ -121,8 +121,8 @@ After creating an account and saving the bridge token:
 
 ```powershell
 $env:ASIFBOT_API_BASE_URL="http://127.0.0.1:8080"
-$env:ASIFBOT_ACCOUNT_ID="acc_your_id"
-$env:ASIFBOT_BRIDGE_TOKEN="your_bridge_token"
+$env:ASIFBOT_ACCOUNT_ID="BRG-6M8Q2A"
+$env:ASIFBOT_BRIDGE_TOKEN="BOT-3F7K-9D2M-Q8LP"
 node bridge-example.js
 ```
 

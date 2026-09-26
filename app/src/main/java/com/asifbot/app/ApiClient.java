@@ -64,6 +64,7 @@ final class ApiClient {
         boolean connected;
         String botStatus;
         String bridgeToken;
+        String bridgeAccountId;
     }
 
     static final class Metrics {
@@ -380,6 +381,7 @@ final class ApiClient {
         account.connected = json.optBoolean("connected", false);
         account.botStatus = json.optString("botStatus", "OFF");
         account.bridgeToken = json.optString("bridgeToken", "");
+        account.bridgeAccountId = json.optString("bridgeAccountId", account.id);
         return account;
     }
 
@@ -607,6 +609,7 @@ final class ApiClient {
         account.connected = source.connected;
         account.botStatus = source.botStatus;
         account.bridgeToken = source.bridgeToken;
+        account.bridgeAccountId = source.bridgeAccountId;
         return account;
     }
 

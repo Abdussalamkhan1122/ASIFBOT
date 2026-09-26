@@ -19,15 +19,15 @@ Use the ASIFBOT Android app in real mode:
 
 1. Login.
 2. Add MT4/MT5 account.
-3. Save the shown `Account ID`.
+3. Save the shown `Bridge Account ID`.
 4. Save the shown `Bridge Token`.
 
 Then attach the bridge EA on the VPS and set:
 
 ```text
 BackendUrl    = https://your-backend-domain.com
-AccountId     = acc_xxxxx
-BridgeToken   = token shown by app
+AccountId     = BRG-6M8Q2A
+BridgeToken   = BOT-3F7K-9D2M-Q8LP
 ManagedMagic  = the magic number used by your trading bot
 ManagedSymbol = XAUUSDc or leave empty for chart symbol
 ```
@@ -110,4 +110,3 @@ The bridge closes/deletes only orders matching:
 - optional comment prefix if `RequireCommentPrefix=true`
 
 It does not close manual trades unless they use the same magic number and symbol.
-

@@ -226,10 +226,11 @@ function verifyBilling(req, res, body) {
 function createTradingAccount(req, res, body) {
   return withDb((db) => {
     const user = requireUser(req, db);
-    const bridgeToken = makeSecret();
+    const bridgeToken = makeBridgeToken();
     const account = {
-      id: makeId('acc'),
+      id: makeAccountId(db),
       userId: user.id,
+      bridgeId: makeBridgeId(db),
       label: cleanText(body.label, 'Trading Account', 80),
       platform: cleanText(body.platform, 'MT4', 10).toUpperCase(),
       broker: cleanText(body.broker, '', 100),
@@ -295,8 +296,11 @@ function rotateBridgeToken(req, res, rawAccountId) {
   return withDb((db) => {
     const user = requireUser(req, db);
     const account = requireOwnedAccount(db, user, rawAccountId);
-    const bridgeToken = makeSecret();
+    const bridgeToken = makeBridgeToken();
 
+    if (!account.bridgeId) {
+      account.bridgeId = makeBridgeId(db);
+    }
     account.bridgeTokenHash = hashBridgeToken(bridgeToken);
     account.bridgeTokenLast4 = bridgeToken.slice(-4);
     account.updatedAt = nowIso();
@@ -430,13 +434,13 @@ function bridgeCommandComplete(req, res, rawCommandId, body) {
 }
 
 function requireBridge(req, body, db) {
-  const accountId = cleanText(body.accountId, '', 120);
+  const accountId = cleanText(body.accountId, '', 120).toUpperCase();
   const token = bridgeTokenFromRequest(req, body);
   if (!accountId || !token) {
     throw httpError(401, 'Bridge accountId and bridgeToken are required.');
   }
 
-  const account = db.accounts.find((item) => item.id === accountId && !item.deletedAt);
+  const account = db.accounts.find((item) => (String(item.id).toUpperCase() === accountId || String(item.bridgeId || '').toUpperCase() === accountId) && !item.deletedAt);
   if (!account || !account.bridgeTokenHash || !safeEqual(account.bridgeTokenHash, hashBridgeToken(token))) {
     throw httpError(401, 'Invalid bridge credentials.');
   }
@@ -495,6 +499,7 @@ function publicAccount(account) {
   const connected = Boolean(account.lastSeenAtMs && Date.now() - Number(account.lastSeenAtMs) <= BRIDGE_ONLINE_WINDOW_MS);
   return {
     id: account.id,
+    bridgeAccountId: account.bridgeId || account.id,
     label: account.label || 'Trading Account',
     platform: account.platform || 'MT4',
     broker: account.broker || '',
@@ -667,8 +672,37 @@ function makeId(prefix) {
   return `${prefix}_${crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex')}`;
 }
 
-function makeSecret() {
-  return crypto.randomBytes(32).toString('base64url');
+function makeAccountId(db) {
+  for (let i = 0; i < 20; i++) {
+    const id = `ACC-${randomCode(6)}`;
+    if (!db.accounts.some((account) => String(account.id).toUpperCase() === id)) {
+      return id;
+    }
+  }
+  return makeId('acc');
+}
+
+function makeBridgeId(db) {
+  for (let i = 0; i < 20; i++) {
+    const id = `BRG-${randomCode(6)}`;
+    if (!db.accounts.some((account) => String(account.bridgeId || '').toUpperCase() === id)) {
+      return id;
+    }
+  }
+  return `BRG-${randomCode(10)}`;
+}
+
+function makeBridgeToken() {
+  return `BOT-${randomCode(4)}-${randomCode(4)}-${randomCode(4)}`;
+}
+
+function randomCode(length) {
+  const alphabet = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+  let out = '';
+  for (let i = 0; i < length; i++) {
+    out += alphabet[crypto.randomInt(0, alphabet.length)];
+  }
+  return out;
 }
 
 function base64url(value) {

@@ -83,7 +83,8 @@ Response:
 {
   "accounts": [
     {
-      "id": "acc_123",
+      "id": "ACC-7K3P9D",
+      "bridgeAccountId": "BRG-6M8Q2A",
       "label": "Exness Gold Cent",
       "platform": "MT4",
       "broker": "Exness-MT4Real",
@@ -119,7 +120,8 @@ Response:
 ```json
 {
   "account": {
-    "id": "acc_123",
+    "id": "ACC-7K3P9D",
+    "bridgeAccountId": "BRG-6M8Q2A",
     "label": "Exness Gold Cent",
     "platform": "MT4",
     "broker": "Exness-MT4Real",
@@ -128,12 +130,12 @@ Response:
     "magicNumber": 7777,
     "connected": false,
     "botStatus": "OFF",
-    "bridgeToken": "shown-only-once-save-this-on-vps"
+    "bridgeToken": "BOT-3F7K-9D2M-Q8LP"
   }
 }
 ```
 
-`bridgeToken` is returned only when the account is created or when the bridge token is rotated. The backend stores only its hash.
+`bridgeAccountId` and `bridgeToken` are the short values to enter in `ASIFBOT_Bridge_MT4` or `ASIFBOT_Bridge_MT5`. `bridgeToken` is returned only when the account is created or when the bridge token is rotated. The backend stores only its hash.
 
 ### Rotate / Generate Bridge Token
 
@@ -146,7 +148,8 @@ Response:
 ```json
 {
   "account": {
-    "id": "acc_123",
+    "id": "ACC-7K3P9D",
+    "bridgeAccountId": "BRG-6M8Q2A",
     "label": "Exness Gold Cent",
     "platform": "MT4",
     "broker": "Exness-MT4Real",
@@ -155,7 +158,7 @@ Response:
     "magicNumber": 26091705,
     "connected": false,
     "botStatus": "OFF",
-    "bridgeToken": "shown-only-once-save-this-on-vps"
+    "bridgeToken": "BOT-3F7K-9D2M-Q8LP"
   }
 }
 ```
@@ -190,7 +193,8 @@ Response:
 ```json
 {
   "account": {
-    "id": "acc_123",
+    "id": "ACC-7K3P9D",
+    "bridgeAccountId": "BRG-6M8Q2A",
     "label": "Exness Gold Cent",
     "platform": "MT4",
     "broker": "Exness-MT4Real",
@@ -338,7 +342,7 @@ Request:
 
 ```json
 {
-  "accountId": "acc_123",
+  "accountId": "BRG-6M8Q2A",
   "botStatus": "ON",
   "metrics": {
     "balance": 50.0,
@@ -358,7 +362,7 @@ Response:
 ```json
 {
   "ok": true,
-  "accountId": "acc_123",
+  "accountId": "BRG-6M8Q2A",
   "serverTime": "2026-09-27T10:00:00.000Z",
   "desiredBotStatus": "ON",
   "commands": [
@@ -384,7 +388,7 @@ Request:
 
 ```json
 {
-  "accountId": "acc_123",
+  "accountId": "BRG-6M8Q2A",
   "success": true,
   "message": "Closed ASIFBOT trades",
   "closedTrades": 3,

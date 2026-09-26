@@ -119,15 +119,15 @@ In the Android app:
 1. Login.
 2. Add MT4/MT5 account.
 3. Save the shown:
-   - Account ID
+   - Bridge Account ID
    - Bridge Token
 
 On the VPS bridge:
 
 ```powershell
 $env:ASIFBOT_API_BASE_URL="https://api.yourdomain.com"
-$env:ASIFBOT_ACCOUNT_ID="acc_xxxxx"
-$env:ASIFBOT_BRIDGE_TOKEN="token_from_app"
+$env:ASIFBOT_ACCOUNT_ID="BRG-6M8Q2A"
+$env:ASIFBOT_BRIDGE_TOKEN="BOT-3F7K-9D2M-Q8LP"
 node bridge-example.js
 ```
 
@@ -171,4 +171,3 @@ For a larger public launch:
 - add automatic encrypted backups
 - add server firewall rules
 - use HTTPS only
-

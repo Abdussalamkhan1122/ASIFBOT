@@ -346,11 +346,12 @@ public final class MainActivity extends Activity implements BillingManager.Liste
     }
 
     private void showBridgeToken(ApiClient.TradingAccount account) {
+        String bridgeAccountId = account.bridgeAccountId == null || account.bridgeAccountId.isEmpty() ? account.id : account.bridgeAccountId;
         new AlertDialog.Builder(this)
                 .setTitle("VPS Bridge Token")
                 .setMessage("Save this token now. It is shown only once and is needed on the VPS/EA bridge for:\n\n"
-                        + account.label + "\n\nAccount ID:\n" + account.id + "\n\nBridge Token:\n" + account.bridgeToken
-                        + "\n\nKeep it private. Anyone with this token can send bridge updates for this linked account.")
+                        + account.label + "\n\nBridge Account ID:\n" + bridgeAccountId + "\n\nBridge Token:\n" + account.bridgeToken
+                        + "\n\nPut these two values into ASIFBOT_Bridge_MT4. Keep them private.")
                 .setPositiveButton("Open Dashboard", (dialog, which) -> showDashboard(account.id))
                 .setNegativeButton("Back to Accounts", (dialog, which) -> showAccounts())
                 .show();
