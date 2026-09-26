@@ -63,6 +63,7 @@ final class ApiClient {
         int magicNumber;
         boolean connected;
         String botStatus;
+        String bridgeToken;
     }
 
     static final class Metrics {
@@ -366,6 +367,7 @@ final class ApiClient {
         account.magicNumber = json.optInt("magicNumber", 0);
         account.connected = json.optBoolean("connected", false);
         account.botStatus = json.optString("botStatus", "OFF");
+        account.bridgeToken = json.optString("bridgeToken", "");
         return account;
     }
 
@@ -592,6 +594,7 @@ final class ApiClient {
         account.magicNumber = source.magicNumber;
         account.connected = source.connected;
         account.botStatus = source.botStatus;
+        account.bridgeToken = source.bridgeToken;
         return account;
     }
 

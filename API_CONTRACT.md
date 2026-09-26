@@ -127,10 +127,13 @@ Response:
     "symbol": "XAUUSDc",
     "magicNumber": 7777,
     "connected": false,
-    "botStatus": "OFF"
+    "botStatus": "OFF",
+    "bridgeToken": "shown-only-once-save-this-on-vps"
   }
 }
 ```
+
+`bridgeToken` is returned only when the account is created or when the bridge token is rotated. The backend stores only its hash.
 
 ### Delete Account
 
@@ -287,3 +290,94 @@ Response:
 ```
 
 The backend must verify the purchase token with the Google Play Developer API before enabling access.
+
+## VPS / EA Bridge APIs
+
+The bridge must authenticate with the linked account ID and bridge token. It can send the token either as:
+
+```text
+Authorization: Bridge <bridgeToken>
+```
+
+or:
+
+```text
+X-Bridge-Token: <bridgeToken>
+```
+
+### Bridge Heartbeat and Command Poll
+
+`POST /bridge/heartbeat`
+
+Request:
+
+```json
+{
+  "accountId": "acc_123",
+  "botStatus": "ON",
+  "metrics": {
+    "balance": 50.0,
+    "equity": 50.84,
+    "marginLevel": 420.5,
+    "floatingProfit": 0.84,
+    "openTradeCount": 2,
+    "totalLots": 0.04,
+    "worstTradeLoss": -0.11
+  },
+  "trades": []
+}
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "accountId": "acc_123",
+  "serverTime": "2026-09-27T10:00:00.000Z",
+  "desiredBotStatus": "ON",
+  "commands": [
+    {
+      "id": "cmd_123",
+      "type": "TURN_OFF_CLOSE_TRADES",
+      "payload": {
+        "closeOpenTrades": true,
+        "deletePendingOrders": true,
+        "scope": "asifbot_only"
+      },
+      "status": "SENT"
+    }
+  ]
+}
+```
+
+### Complete Bridge Command
+
+`POST /bridge/commands/{commandId}/complete`
+
+Request:
+
+```json
+{
+  "accountId": "acc_123",
+  "success": true,
+  "message": "Closed ASIFBOT trades",
+  "closedTrades": 3,
+  "deletedPendingOrders": 2,
+  "metrics": {},
+  "trades": []
+}
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "command": {
+    "id": "cmd_123",
+    "type": "TURN_OFF_CLOSE_TRADES",
+    "status": "COMPLETED"
+  }
+}
+```

@@ -1,0 +1,24 @@
+name: Backend Check
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  node-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check backend syntax
+        working-directory: backend
+        run: |
+          node --check server.js
+          node --check bridge-example.js

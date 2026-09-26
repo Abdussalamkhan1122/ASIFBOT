@@ -310,11 +310,26 @@ public final class MainActivity extends Activity implements BillingManager.Liste
                 @Override
                 public void success(ApiClient.TradingAccount value) {
                     selectedAccountId = value.id;
-                    showDashboard(value.id);
+                    if (value.bridgeToken != null && !value.bridgeToken.isEmpty()) {
+                        showBridgeToken(value);
+                    } else {
+                        showDashboard(value.id);
+                    }
                 }
             });
         });
         cancel.setOnClickListener(v -> showAccounts());
+    }
+
+    private void showBridgeToken(ApiClient.TradingAccount account) {
+        new AlertDialog.Builder(this)
+                .setTitle("VPS Bridge Token")
+                .setMessage("Save this token now. It is shown only once and is needed on the VPS/EA bridge for:\n\n"
+                        + account.label + "\n\nAccount ID:\n" + account.id + "\n\nBridge Token:\n" + account.bridgeToken
+                        + "\n\nKeep it private. Anyone with this token can send bridge updates for this linked account.")
+                .setPositiveButton("Open Dashboard", (dialog, which) -> showDashboard(account.id))
+                .setNegativeButton("Back to Accounts", (dialog, which) -> showAccounts())
+                .show();
     }
 
     private void showDashboard(String accountId) {

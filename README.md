@@ -42,6 +42,8 @@ The EA or bridge must poll your backend for `enabled=true/false`, then allow or 
 
 For phone testing, the app currently uses `DEMO_MODE=true` in `app/build.gradle.kts`. That makes login/create-account work locally and prevents the placeholder `api.asifbot.com` error. Before Play Store release with real bot control, set `DEMO_MODE=false` and connect `API_BASE_URL` to your real backend.
 
+The real backend starter has been added in `backend/`. It includes Android API endpoints, VPS bridge endpoints, user isolation, delete account, bot commands, and bridge token authentication.
+
 For the full production VPS, database, command queue, subscription, and security plan, read `PRODUCTION_ARCHITECTURE.md`.
 
 ## Build Notes

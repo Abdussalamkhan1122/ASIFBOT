@@ -10,8 +10,8 @@ android {
         applicationId = "com.asifbot.app"
         minSdk = 23
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.1.0"
+        versionCode = 4
+        versionName = "1.2.0"
 
         buildConfigField("String", "API_BASE_URL", "\"https://api.asifbot.com\"")
         buildConfigField("String", "SUBSCRIPTION_PRODUCT_ID", "\"asifbot_monthly\"")
