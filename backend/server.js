@@ -318,10 +318,6 @@ function rotateBridgeToken(req, res, rawAccountId) {
 function createBotCommand(req, res, rawAccountId, action, body) {
   return withDb((db) => {
     const user = requireUser(req, db);
-    if (!hasAccess(user)) {
-      throw httpError(402, 'Trial or subscription is required for bot control.');
-    }
-
     const account = requireOwnedAccount(db, user, rawAccountId);
     let commandType = 'TURN_ON';
     if (action === 'off') commandType = 'TURN_OFF_CLOSE_TRADES';
@@ -586,7 +582,9 @@ function latestAccountCommand(db, accountId) {
 }
 
 function hasAccess(user) {
-  return Date.now() < Number(user.trialEndsAtMs || 0) || isSubscriptionActive(user);
+  // ASIFBOT is distributed to approved users; no trial or paid subscription
+  // is required to control a linked trading account.
+  return true;
 }
 
 function isSubscriptionActive(user) {

@@ -37,7 +37,9 @@ final class ApiClient {
         boolean botEnabled;
 
         boolean hasAccess() {
-            return subscriptionActive || System.currentTimeMillis() < trialEndsAtMs;
+            // Access is granted to approved ASIFBOT users; no trial or
+            // subscription is required.
+            return true;
         }
 
         String accessLabel() {

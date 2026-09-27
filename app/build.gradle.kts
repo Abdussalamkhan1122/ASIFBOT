@@ -10,11 +10,10 @@ android {
         applicationId = "com.asifbot.app"
         minSdk = 23
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.2.2"
+        versionCode = 7
+        versionName = "1.3.0"
 
         buildConfigField("String", "API_BASE_URL", "\"https://backed-expenses-cast-boulder.trycloudflare.com\"")
-        buildConfigField("String", "SUBSCRIPTION_PRODUCT_ID", "\"asifbot_monthly\"")
         buildConfigField("boolean", "DEMO_MODE", "false")
     }
 
@@ -24,5 +23,4 @@ android {
 }
 
 dependencies {
-    implementation("com.android.billingclient:billing:8.0.0")
 }

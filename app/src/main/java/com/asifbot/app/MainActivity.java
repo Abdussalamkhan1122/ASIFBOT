@@ -19,12 +19,10 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.billingclient.api.Purchase;
-
 import java.util.ArrayList;
 import java.util.Locale;
 
-public final class MainActivity extends Activity implements BillingManager.Listener {
+public final class MainActivity extends Activity {
     private static final int BG = Color.rgb(15, 18, 22);
     private static final int PANEL = Color.rgb(246, 247, 249);
     private static final int PANEL_DARK = Color.rgb(28, 33, 40);
@@ -37,7 +35,6 @@ public final class MainActivity extends Activity implements BillingManager.Liste
     private final Handler main = new Handler(Looper.getMainLooper());
     private SessionManager session;
     private ApiClient api;
-    private BillingManager billing;
     private ApiClient.AccountState accountState;
     private String selectedAccountId = "";
     private String currentScreen = "";
@@ -48,10 +45,8 @@ public final class MainActivity extends Activity implements BillingManager.Liste
         super.onCreate(savedInstanceState);
         session = new SessionManager(this);
         api = new ApiClient(BuildConfig.API_BASE_URL, BuildConfig.DEMO_MODE);
-        if (!BuildConfig.DEMO_MODE) {
-            billing = new BillingManager(this, BuildConfig.SUBSCRIPTION_PRODUCT_ID, this);
-            billing.start();
-        }
+        // Billing/trial checks are intentionally disabled. Approved users
+        // can use bot control immediately after signing in.
 
         if (session.isSignedIn()) {
             accountState = session.state();
@@ -65,43 +60,16 @@ public final class MainActivity extends Activity implements BillingManager.Liste
     @Override
     protected void onDestroy() {
         stopAutoRefresh();
-        if (billing != null) {
-            billing.endConnection();
-        }
         super.onDestroy();
     }
 
     @Override
     public void onBackPressed() {
-        if ("dashboard".equals(currentScreen) || "trades".equals(currentScreen) || "add".equals(currentScreen) || "subscription".equals(currentScreen)) {
+        if ("dashboard".equals(currentScreen) || "trades".equals(currentScreen) || "add".equals(currentScreen)) {
             showAccounts();
         } else {
             super.onBackPressed();
         }
-    }
-
-    @Override
-    public void onBillingMessage(String message) {
-        main.post(() -> toast(message));
-    }
-
-    @Override
-    public void onPurchaseReady(Purchase purchase) {
-        if (accountState == null || accountState.token == null || accountState.token.isEmpty()) {
-            main.post(() -> toast("Login first, then subscribe."));
-            return;
-        }
-        api.verifyPurchase(accountState.token, BuildConfig.SUBSCRIPTION_PRODUCT_ID, purchase.getPurchaseToken(), new UiCallback<ApiClient.AccountState>() {
-            @Override
-            public void success(ApiClient.AccountState value) {
-                accountState = value;
-                session.save(value);
-                if (billing != null) {
-                    billing.acknowledge(purchase);
-                }
-                showSubscription();
-            }
-        });
     }
 
     private void showLogin() {
@@ -125,14 +93,14 @@ public final class MainActivity extends Activity implements BillingManager.Liste
         card.addView(password);
 
         Button login = primaryButton("Login");
-        Button register = secondaryButton("Create account with 3-day trial");
+        Button register = secondaryButton("Create account");
         Button forgot = textButton("Forgot password");
         card.addView(login);
         card.addView(register);
         card.addView(forgot);
 
-        body.addView(infoCard("3-Day Trial + Subscription",
-                "New users can create an account with a 3-day free trial. After the trial, ASIFBOT control requires an active subscription."));
+        body.addView(infoCard("ASIFBOT access",
+                "Sign in to manage your linked MT4/MT5 trading accounts."));
 
         login.setOnClickListener(v -> authenticate(false, email.getText().toString(), password.getText().toString()));
         register.setOnClickListener(v -> authenticate(true, email.getText().toString(), password.getText().toString()));
@@ -223,14 +191,11 @@ public final class MainActivity extends Activity implements BillingManager.Liste
         }
 
         Button add = primaryButton("Add MT4/MT5 Account");
-        Button subscription = secondaryButton("Trial / Subscription");
         Button logout = secondaryButton("Logout");
         body.addView(add);
-        body.addView(subscription);
         body.addView(logout);
 
         add.setOnClickListener(v -> showAddAccount());
-        subscription.setOnClickListener(v -> showSubscription());
         logout.setOnClickListener(v -> {
             session.clear();
             accountState = null;
@@ -429,10 +394,6 @@ public final class MainActivity extends Activity implements BillingManager.Liste
     }
 
     private void turnOn(String accountId) {
-        if (!hasAccess()) {
-            showSubscription();
-            return;
-        }
         api.turnBotOn(token(), accountId, new UiCallback<ApiClient.DashboardState>() {
             @Override
             public void success(ApiClient.DashboardState value) {
@@ -513,43 +474,6 @@ public final class MainActivity extends Activity implements BillingManager.Liste
         body.addView(back);
         close.setOnClickListener(v -> confirmCloseAndOff(state));
         back.setOnClickListener(v -> showDashboard(state.account.id));
-    }
-
-    private void showSubscription() {
-        stopAutoRefresh();
-        currentScreen = "subscription";
-        if (accountState == null) {
-            accountState = session.state();
-        }
-        LinearLayout body = baseScreen("Subscription", "Manage trial and Google Play access.");
-
-        LinearLayout card = card();
-        body.addView(card);
-        card.addView(sectionTitle("Access"));
-        card.addView(line("User: " + accountState.email));
-        card.addView(line("Status: " + accountState.accessLabel()));
-        card.addView(infoText(getString(R.string.subscription_terms)));
-
-        Button subscribe = primaryButton(api.isDemoMode() ? "Activate Demo Subscription" : "Subscribe / Start Trial");
-        Button back = secondaryButton("Back to Accounts");
-        card.addView(subscribe);
-        card.addView(back);
-
-        subscribe.setOnClickListener(v -> {
-            if (api.isDemoMode()) {
-                api.verifyPurchase(token(), BuildConfig.SUBSCRIPTION_PRODUCT_ID, "demo-purchase", new UiCallback<ApiClient.AccountState>() {
-                    @Override
-                    public void success(ApiClient.AccountState value) {
-                        accountState = value;
-                        session.save(value);
-                        showSubscription();
-                    }
-                });
-            } else if (billing != null) {
-                billing.launchSubscription(this, session.accountKey());
-            }
-        });
-        back.setOnClickListener(v -> showAccounts());
     }
 
     private LinearLayout baseScreen(String title, String subtitle) {
