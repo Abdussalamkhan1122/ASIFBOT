@@ -43,15 +43,7 @@ final class ApiClient {
         }
 
         String accessLabel() {
-            if (subscriptionActive) {
-                return "Subscription active";
-            }
-            long remainingMs = trialEndsAtMs - System.currentTimeMillis();
-            if (remainingMs > 0) {
-                long days = Math.max(1, (long) Math.ceil(remainingMs / 86400000.0));
-                return "Trial active: " + days + " day(s) left";
-            }
-            return "Subscription required";
+            return "Access enabled";
         }
     }
 
