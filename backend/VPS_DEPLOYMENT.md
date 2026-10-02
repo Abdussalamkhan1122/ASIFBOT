@@ -70,11 +70,18 @@ ASIFBOT_DATA_DIR=./data
 ASIFBOT_CORS_ORIGIN=*
 ASIFBOT_BILLING_MODE=mock
 ASIFBOT_TOKEN_TTL_DAYS=30
+ASIFBOT_SMTP_HOST=smtp.gmail.com
+ASIFBOT_SMTP_PORT=465
+ASIFBOT_SMTP_USER=your-gmail-address@gmail.com
+ASIFBOT_SMTP_PASS=your-gmail-app-password
+ASIFBOT_SMTP_FROM=your-gmail-address@gmail.com
+ASIFBOT_RESET_CODE_TTL_MINUTES=15
 ```
 
 Important:
 
 - Keep `ASIFBOT_TOKEN_SECRET` private.
+- Keep `ASIFBOT_SMTP_PASS` private. Use a Gmail App Password, not your normal Gmail password.
 - Do not push `.env` to GitHub.
 - Keep `backend/data/db.json` backed up.
 

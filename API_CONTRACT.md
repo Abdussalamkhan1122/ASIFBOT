@@ -47,6 +47,43 @@ Request:
 
 Response is the same account-state JSON as register.
 
+### Request Password Reset Code
+
+`POST /auth/password/forgot`
+
+Request:
+
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+Response:
+
+```json
+{
+  "ok": true,
+  "message": "If this email exists, a reset code has been sent."
+}
+```
+
+### Reset Password
+
+`POST /auth/password/reset`
+
+Request:
+
+```json
+{
+  "email": "user@example.com",
+  "code": "123456",
+  "password": "new-password"
+}
+```
+
+Response is the same account-state JSON as login.
+
 ### Current User
 
 `GET /me`

@@ -9,6 +9,7 @@ For live hosting steps, read `VPS_DEPLOYMENT.md`.
 ## What It Supports
 
 - Email/password register and login.
+- Gmail SMTP password reset by email code.
 - 3-day trial state.
 - Mock Google Play subscription verification for staging.
 - Multiple MT4/MT5 trading accounts per user.
@@ -57,9 +58,16 @@ ASIFBOT_DATA_DIR=./data
 ASIFBOT_CORS_ORIGIN=*
 ASIFBOT_BILLING_MODE=mock
 ASIFBOT_TOKEN_TTL_DAYS=30
+ASIFBOT_SMTP_HOST=smtp.gmail.com
+ASIFBOT_SMTP_PORT=465
+ASIFBOT_SMTP_USER=your-gmail-address@gmail.com
+ASIFBOT_SMTP_PASS=your-gmail-app-password
+ASIFBOT_SMTP_FROM=your-gmail-address@gmail.com
+ASIFBOT_RESET_CODE_TTL_MINUTES=15
 ```
 
 For production, `ASIFBOT_TOKEN_SECRET` must be long and private. Do not keep the example secret.
+For Gmail password reset, use a Gmail App Password, not your normal Gmail login password.
 
 ## Android Connection
 
@@ -89,6 +97,8 @@ The Android app uses:
 ```text
 POST   /auth/register
 POST   /auth/login
+POST   /auth/password/forgot
+POST   /auth/password/reset
 GET    /me
 POST   /billing/google/verify
 GET    /accounts

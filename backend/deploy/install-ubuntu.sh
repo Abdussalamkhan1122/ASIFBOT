@@ -54,6 +54,12 @@ ASIFBOT_DATA_DIR=${DATA_DIR}
 ASIFBOT_CORS_ORIGIN=*
 ASIFBOT_BILLING_MODE=mock
 ASIFBOT_TOKEN_TTL_DAYS=30
+ASIFBOT_SMTP_HOST=smtp.gmail.com
+ASIFBOT_SMTP_PORT=465
+ASIFBOT_SMTP_USER=your-gmail-address@gmail.com
+ASIFBOT_SMTP_PASS=your-gmail-app-password
+ASIFBOT_SMTP_FROM=your-gmail-address@gmail.com
+ASIFBOT_RESET_CODE_TTL_MINUTES=15
 EOF
   sudo chown "${APP_USER}:${APP_USER}" "${APP_DIR}/.env"
   sudo chmod 600 "${APP_DIR}/.env"

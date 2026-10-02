@@ -101,6 +101,9 @@ Set a real secret:
 ```text
 ASIFBOT_TOKEN_SECRET=use-a-long-random-secret-never-share-this
 ASIFBOT_DATA_DIR=/var/lib/asifbot
+ASIFBOT_SMTP_USER=your-gmail-address@gmail.com
+ASIFBOT_SMTP_PASS=your-gmail-app-password
+ASIFBOT_SMTP_FROM=your-gmail-address@gmail.com
 ```
 
 ## 3. Run Backend Permanently

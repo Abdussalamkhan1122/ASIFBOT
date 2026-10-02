@@ -143,6 +143,38 @@ final class ApiClient {
         post("/auth/register", null, body, json -> callback.onSuccess(parseAccount(json)), callback);
     }
 
+    void requestPasswordReset(String email, Callback<String> callback) {
+        if (demoMode) {
+            callback.onSuccess("Demo reset code sent. Use 123456.");
+            return;
+        }
+        JSONObject body = new JSONObject();
+        try {
+            body.put("email", email);
+        } catch (JSONException e) {
+            callback.onError(e.getMessage());
+            return;
+        }
+        post("/auth/password/forgot", null, body, json -> callback.onSuccess(json.optString("message", "Reset code sent.")), callback);
+    }
+
+    void resetPassword(String email, String code, String password, Callback<AccountState> callback) {
+        if (demoMode) {
+            demoLogin(email, callback);
+            return;
+        }
+        JSONObject body = new JSONObject();
+        try {
+            body.put("email", email);
+            body.put("code", code);
+            body.put("password", password);
+        } catch (JSONException e) {
+            callback.onError(e.getMessage());
+            return;
+        }
+        post("/auth/password/reset", null, body, json -> callback.onSuccess(parseAccount(json)), callback);
+    }
+
     void loadMe(String token, Callback<AccountState> callback) {
         if (demoMode) {
             callback.onSuccess(demoAccount(emailFromDemoToken(token), false, anyDemoBotEnabled(token)));

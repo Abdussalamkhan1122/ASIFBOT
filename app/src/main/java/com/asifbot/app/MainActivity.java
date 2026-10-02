@@ -67,6 +67,8 @@ public final class MainActivity extends Activity {
     public void onBackPressed() {
         if ("dashboard".equals(currentScreen) || "trades".equals(currentScreen) || "add".equals(currentScreen)) {
             showAccounts();
+        } else if ("forgot".equals(currentScreen)) {
+            showLogin();
         } else {
             super.onBackPressed();
         }
@@ -104,7 +106,7 @@ public final class MainActivity extends Activity {
 
         login.setOnClickListener(v -> authenticate(false, email.getText().toString(), password.getText().toString()));
         register.setOnClickListener(v -> authenticate(true, email.getText().toString(), password.getText().toString()));
-        forgot.setOnClickListener(v -> toast("Password reset will be available when backend email is connected."));
+        forgot.setOnClickListener(v -> showForgotPassword(email.getText().toString()));
     }
 
     private void authenticate(boolean createAccount, String email, String password) {
@@ -128,6 +130,93 @@ public final class MainActivity extends Activity {
         } else {
             api.login(email.trim(), password, callback);
         }
+    }
+
+    private void showForgotPassword(String initialEmail) {
+        stopAutoRefresh();
+        currentScreen = "forgot";
+        LinearLayout body = baseScreen("Reset Password", "Enter your email, then use the reset code sent by ASIFBOT.");
+
+        LinearLayout card = card();
+        body.addView(card);
+
+        EditText email = input("Email");
+        email.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+        email.setText(initialEmail == null ? "" : initialEmail.trim());
+        card.addView(label("Email"));
+        card.addView(email);
+
+        Button sendCode = primaryButton("Send Reset Code");
+        card.addView(sendCode);
+
+        EditText code = input("6 digit code");
+        code.setInputType(InputType.TYPE_CLASS_NUMBER);
+        card.addView(label("Reset code"));
+        card.addView(code);
+
+        EditText password = input("New password");
+        password.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        card.addView(label("New password"));
+        card.addView(password);
+
+        Button reset = primaryButton("Reset Password");
+        Button back = secondaryButton("Back to Login");
+        card.addView(reset);
+        card.addView(back);
+
+        body.addView(infoCard("Email reset",
+                "The code expires soon. If it does not arrive, check spam or request a new code."));
+
+        sendCode.setOnClickListener(v -> {
+            String emailValue = email.getText().toString().trim();
+            if (emailValue.isEmpty()) {
+                toast("Enter your email address.");
+                return;
+            }
+            sendCode.setEnabled(false);
+            api.requestPasswordReset(emailValue, new UiCallback<String>() {
+                @Override
+                public void success(String value) {
+                    sendCode.setEnabled(true);
+                    toast(value);
+                }
+
+                @Override
+                public void error(String message) {
+                    sendCode.setEnabled(true);
+                    super.error(message);
+                }
+            });
+        });
+
+        reset.setOnClickListener(v -> {
+            String emailValue = email.getText().toString().trim();
+            String codeValue = code.getText().toString().trim();
+            String passwordValue = password.getText().toString();
+            if (emailValue.isEmpty() || codeValue.length() != 6 || passwordValue.length() < 6) {
+                toast("Enter email, 6 digit code, and a password with at least 6 characters.");
+                return;
+            }
+            reset.setEnabled(false);
+            api.resetPassword(emailValue, codeValue, passwordValue, new UiCallback<ApiClient.AccountState>() {
+                @Override
+                public void success(ApiClient.AccountState value) {
+                    accountState = value;
+                    session.save(value);
+                    selectedAccountId = "";
+                    toast("Password changed.");
+                    showAccounts();
+                }
+
+                @Override
+                public void error(String message) {
+                    reset.setEnabled(true);
+                    super.error(message);
+                }
+            });
+        });
+
+        back.setOnClickListener(v -> showLogin());
     }
 
     private void refreshAccount() {

@@ -15,6 +15,12 @@ const TOKEN_SECRET = process.env.ASIFBOT_TOKEN_SECRET || 'dev-only-change-this-s
 const CORS_ORIGIN = process.env.ASIFBOT_CORS_ORIGIN || '*';
 const BILLING_MODE = process.env.ASIFBOT_BILLING_MODE || 'mock';
 const TOKEN_TTL_DAYS = Number(process.env.ASIFBOT_TOKEN_TTL_DAYS || 30);
+const RESET_CODE_TTL_MINUTES = Number(process.env.ASIFBOT_RESET_CODE_TTL_MINUTES || 15);
+const SMTP_HOST = process.env.ASIFBOT_SMTP_HOST || 'smtp.gmail.com';
+const SMTP_PORT = Number(process.env.ASIFBOT_SMTP_PORT || 465);
+const SMTP_USER = process.env.ASIFBOT_SMTP_USER || '';
+const SMTP_PASS = String(process.env.ASIFBOT_SMTP_PASS || '').replace(/\s+/g, '');
+const SMTP_FROM = process.env.ASIFBOT_SMTP_FROM || SMTP_USER;
 const BRIDGE_ONLINE_WINDOW_MS = 45 * 1000;
 const MAX_BODY_BYTES = 1024 * 1024;
 
@@ -67,6 +73,14 @@ async function handleRequest(req, res) {
 
   if (method === 'POST' && pathname === '/auth/login') {
     return loginUser(req, res, body);
+  }
+
+  if (method === 'POST' && pathname === '/auth/password/forgot') {
+    return forgotPassword(res, body);
+  }
+
+  if (method === 'POST' && pathname === '/auth/password/reset') {
+    return resetPassword(res, body);
   }
 
   if (method === 'GET' && pathname === '/me') {
@@ -193,6 +207,93 @@ function loginUser(req, res, body) {
 
     user.updatedAt = nowIso();
     audit(db, user.id, null, 'USER_LOGIN', { ip: req.socket.remoteAddress || '' });
+    return json(res, 200, accountState(db, user));
+  });
+}
+
+async function forgotPassword(res, body) {
+  const email = normalizeEmail(body.email);
+  if (!isValidEmail(email)) {
+    throw httpError(400, 'Enter a valid email address.');
+  }
+
+  let reset = null;
+  withDb((db) => {
+    const user = db.users.find((item) => item.email === email);
+    if (!user) {
+      return null;
+    }
+
+    const code = randomDigits(6);
+    reset = {
+      id: makeId('rst'),
+      userId: user.id,
+      email: user.email,
+      code,
+      codeHash: hashResetCode(user.id, code),
+      expiresAtMs: Date.now() + RESET_CODE_TTL_MINUTES * 60 * 1000,
+      attempts: 0,
+      usedAt: null,
+      createdAt: nowIso()
+    };
+    db.passwordResets.push(withoutSecretCode(reset));
+    audit(db, user.id, null, 'PASSWORD_RESET_REQUESTED', { email: user.email });
+    return null;
+  });
+
+  if (reset) {
+    await sendPasswordResetEmail(reset.email, reset.code);
+  }
+
+  return json(res, 200, {
+    ok: true,
+    message: 'If this email exists, a reset code has been sent.'
+  });
+}
+
+function resetPassword(res, body) {
+  const email = normalizeEmail(body.email);
+  const code = String(body.code || '').trim().replace(/\s+/g, '');
+  const password = String(body.password || '');
+
+  if (!isValidEmail(email)) {
+    throw httpError(400, 'Enter a valid email address.');
+  }
+  if (!/^\d{6}$/.test(code)) {
+    throw httpError(400, 'Enter the 6 digit reset code.');
+  }
+  if (password.length < 6) {
+    throw httpError(400, 'Password must be at least 6 characters.');
+  }
+
+  return withDb((db) => {
+    const user = db.users.find((item) => item.email === email);
+    if (!user) {
+      throw httpError(400, 'Invalid or expired reset code.');
+    }
+
+    const now = Date.now();
+    const reset = db.passwordResets
+      .filter((item) => item.userId === user.id && !item.usedAt)
+      .sort((a, b) => Number(b.expiresAtMs || 0) - Number(a.expiresAtMs || 0))[0];
+
+    if (!reset || now > Number(reset.expiresAtMs || 0)) {
+      throw httpError(400, 'Invalid or expired reset code.');
+    }
+    if (Number(reset.attempts || 0) >= 5) {
+      throw httpError(429, 'Too many reset attempts. Request a new code.');
+    }
+
+    reset.attempts = Number(reset.attempts || 0) + 1;
+    if (!safeEqual(reset.codeHash, hashResetCode(user.id, code))) {
+      throw httpError(400, 'Invalid or expired reset code.');
+    }
+
+    user.passwordHash = hashPassword(password);
+    user.updatedAt = nowIso();
+    reset.usedAt = nowIso();
+    audit(db, user.id, null, 'PASSWORD_RESET_COMPLETED', { email: user.email });
+
     return json(res, 200, accountState(db, user));
   });
 }
@@ -666,6 +767,10 @@ function sha256(value) {
   return crypto.createHash('sha256').update(String(value)).digest('hex');
 }
 
+function hashResetCode(userId, code) {
+  return sha256(`reset:${TOKEN_SECRET}:${userId}:${code}`);
+}
+
 function makeId(prefix) {
   return `${prefix}_${crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex')}`;
 }
@@ -699,6 +804,14 @@ function randomCode(length) {
   let out = '';
   for (let i = 0; i < length; i++) {
     out += alphabet[crypto.randomInt(0, alphabet.length)];
+  }
+  return out;
+}
+
+function randomDigits(length) {
+  let out = '';
+  for (let i = 0; i < length; i++) {
+    out += String(crypto.randomInt(0, 10));
   }
   return out;
 }
@@ -807,6 +920,7 @@ function initialDb() {
     users: [],
     accounts: [],
     commands: [],
+    passwordResets: [],
     snapshots: {},
     auditLogs: []
   };
@@ -837,8 +951,11 @@ function normalizeDb(db) {
   db.users = Array.isArray(db.users) ? db.users : [];
   db.accounts = Array.isArray(db.accounts) ? db.accounts : [];
   db.commands = Array.isArray(db.commands) ? db.commands : [];
+  db.passwordResets = Array.isArray(db.passwordResets) ? db.passwordResets : [];
   db.snapshots = db.snapshots && typeof db.snapshots === 'object' && !Array.isArray(db.snapshots) ? db.snapshots : {};
   db.auditLogs = Array.isArray(db.auditLogs) ? db.auditLogs : [];
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  db.passwordResets = db.passwordResets.filter((item) => !item.usedAt && Number(item.expiresAtMs || 0) > cutoff);
   return db;
 }
 
@@ -879,4 +996,150 @@ function loadEnvFile(filePath) {
       process.env[key] = value;
     }
   });
+}
+
+function withoutSecretCode(reset) {
+  const copy = { ...reset };
+  delete copy.code;
+  return copy;
+}
+
+async function sendPasswordResetEmail(email, code) {
+  if (!SMTP_USER || !SMTP_PASS || !SMTP_FROM) {
+    throw httpError(501, 'Password reset email is not configured on the server.');
+  }
+
+  const subject = 'ASIFBOT password reset code';
+  const text = [
+    `Your ASIFBOT password reset code is: ${code}`,
+    '',
+    `This code expires in ${RESET_CODE_TTL_MINUTES} minutes.`,
+    'If you did not request this, you can ignore this email.'
+  ].join('\r\n');
+
+  try {
+    await sendSmtpMail({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+      from: SMTP_FROM,
+      to: email,
+      subject,
+      text
+    });
+  } catch (error) {
+    console.error('Password reset email failed:', error);
+    throw httpError(502, 'Password reset email could not be sent. Check server Gmail settings.');
+  }
+}
+
+function sendSmtpMail(options) {
+  const tls = require('tls');
+  const socket = tls.connect({
+    host: options.host,
+    port: options.port,
+    servername: options.host
+  });
+  socket.setEncoding('utf8');
+
+  let buffer = '';
+  const lines = [];
+
+  socket.on('data', (chunk) => {
+    buffer += chunk;
+    const parts = buffer.split(/\r?\n/);
+    buffer = parts.pop() || '';
+    parts.forEach((line) => {
+      if (line) lines.push(line);
+    });
+  });
+
+  function write(command) {
+    socket.write(`${command}\r\n`);
+  }
+
+  function waitFor(expectedCode) {
+    return new Promise((resolve, reject) => {
+      const deadline = Date.now() + 15000;
+      const timer = setInterval(() => {
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (!/^\d{3}[ -]/.test(line)) continue;
+          const code = Number(line.slice(0, 3));
+          const complete = line.charAt(3) === ' ';
+          if (complete) {
+            lines.splice(0, i + 1);
+            clearInterval(timer);
+            if (code === expectedCode) {
+              resolve(line);
+            } else {
+              reject(new Error(`SMTP expected ${expectedCode}, got ${line}`));
+            }
+            return;
+          }
+        }
+        if (Date.now() > deadline) {
+          clearInterval(timer);
+          reject(new Error('SMTP timed out.'));
+        }
+      }, 50);
+    });
+  }
+
+  const message = [
+    `From: ${formatEmailAddress(options.from)}`,
+    `To: ${formatEmailAddress(options.to)}`,
+    `Subject: ${encodeMailHeader(options.subject)}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: 8bit',
+    '',
+    options.text,
+    ''
+  ].join('\r\n').replace(/^\./gm, '..');
+
+  return new Promise((resolve, reject) => {
+    socket.once('error', reject);
+    socket.once('secureConnect', async () => {
+      try {
+        await waitFor(220);
+        write(`EHLO ${require('os').hostname() || 'localhost'}`);
+        await waitFor(250);
+        write('AUTH LOGIN');
+        await waitFor(334);
+        write(Buffer.from(options.user, 'utf8').toString('base64'));
+        await waitFor(334);
+        write(Buffer.from(options.pass, 'utf8').toString('base64'));
+        await waitFor(235);
+        write(`MAIL FROM:<${cleanEmailAddress(options.from)}>`);
+        await waitFor(250);
+        write(`RCPT TO:<${cleanEmailAddress(options.to)}>`);
+        await waitFor(250);
+        write('DATA');
+        await waitFor(354);
+        write(`${message}\r\n.`);
+        await waitFor(250);
+        write('QUIT');
+        socket.end();
+        resolve();
+      } catch (error) {
+        socket.destroy();
+        reject(error);
+      }
+    });
+  });
+}
+
+function cleanEmailAddress(value) {
+  const match = String(value || '').match(/<([^>]+)>/);
+  return (match ? match[1] : String(value || '')).trim();
+}
+
+function formatEmailAddress(value) {
+  return cleanEmailAddress(value);
+}
+
+function encodeMailHeader(value) {
+  return String(value || '').replace(/[\r\n]/g, ' ');
 }
