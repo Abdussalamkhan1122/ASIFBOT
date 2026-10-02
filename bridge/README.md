@@ -25,7 +25,7 @@ Use the ASIFBOT Android app in real mode:
 Then attach the bridge EA on the VPS and set:
 
 ```text
-BackendUrl    = https://your-backend-domain.com
+BackendUrl    = https://api.asifbot.com
 AccountId     = BRG-6M8Q2A
 BridgeToken   = BOT-3F7K-9D2M-Q8LP
 ManagedMagic  = the magic number used by your trading bot
@@ -43,7 +43,7 @@ In MT4/MT5:
 5. Add your backend URL, for example:
 
 ```text
-https://api.yourdomain.com
+https://api.asifbot.com
 ```
 
 If testing locally:

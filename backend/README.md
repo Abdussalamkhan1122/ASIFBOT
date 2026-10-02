@@ -69,8 +69,14 @@ When the backend is deployed to a real HTTPS domain:
 2. Set:
 
 ```kotlin
-buildConfigField("String", "API_BASE_URL", "\"https://your-domain.com\"")
+buildConfigField("String", "API_BASE_URL", "\"https://api.asifbot.com\"")
 buildConfigField("boolean", "DEMO_MODE", "false")
+```
+
+Or pass the permanent domain during build:
+
+```powershell
+gradle :app:assembleDebug -PASIFBOT_API_BASE_URL=https://api.asifbot.com -PASIFBOT_DEMO_MODE=false
 ```
 
 3. Push to GitHub.

@@ -1,0 +1,20 @@
+[Unit]
+Description=ASIFBOT Backend API
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/asifbot/backend
+EnvironmentFile=/opt/asifbot/backend/.env
+ExecStart=/usr/bin/node /opt/asifbot/backend/server.js
+Restart=always
+RestartSec=5
+User=asifbot
+Group=asifbot
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/asifbot /opt/asifbot/backend
+
+[Install]
+WantedBy=multi-user.target

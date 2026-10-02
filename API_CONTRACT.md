@@ -1,6 +1,6 @@
 # ASIFBOT API Contract
 
-The Android app is wired for a backend at `https://api.asifbot.com`. Change `API_BASE_URL` in `app/build.gradle.kts` when your real backend is ready.
+The Android app is wired for a backend at `https://api.asifbot.com`. Override it at build time with `ASIFBOT_API_BASE_URL` when you use a different permanent domain.
 
 For phone testing, `DEMO_MODE=true` keeps everything local inside the app.
 

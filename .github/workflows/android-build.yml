@@ -11,6 +11,9 @@ jobs:
   build:
     name: Build ASIFBOT
     runs-on: ubuntu-latest
+    env:
+      ASIFBOT_API_BASE_URL: ${{ vars.ASIFBOT_API_BASE_URL || secrets.ASIFBOT_API_BASE_URL }}
+      ASIFBOT_DEMO_MODE: ${{ vars.ASIFBOT_DEMO_MODE || secrets.ASIFBOT_DEMO_MODE }}
 
     steps:
       - name: Checkout source
@@ -31,7 +34,9 @@ jobs:
         shell: bash
         run: |
           set +e
-          gradle --no-daemon :app:assembleDebug :app:bundleRelease --stacktrace --info 2>&1 | tee build-log.txt
+          gradle --no-daemon :app:assembleDebug :app:bundleRelease --stacktrace --info \
+            -PASIFBOT_API_BASE_URL="${ASIFBOT_API_BASE_URL:-https://api.asifbot.com}" \
+            -PASIFBOT_DEMO_MODE="${ASIFBOT_DEMO_MODE:-false}" 2>&1 | tee build-log.txt
           status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
             echo "---- Build error summary ----"

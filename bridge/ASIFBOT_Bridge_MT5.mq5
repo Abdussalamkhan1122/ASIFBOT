@@ -11,7 +11,7 @@
 
 CTrade trade;
 
-input string BackendUrl             = "https://api.yourdomain.com";
+input string BackendUrl             = "https://api.asifbot.com";
 input string AccountId              = "";
 input string BridgeToken            = "";
 input long   ManagedMagic           = 7777;

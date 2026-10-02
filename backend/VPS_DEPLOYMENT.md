@@ -2,6 +2,12 @@
 
 This is the practical path to make ASIFBOT real.
 
+For the permanent DNS, Nginx, HTTPS, and systemd setup, use:
+
+```text
+backend/PERMANENT_DNS_VPS_PUBLISH.md
+```
+
 ## 1. Choose Where Backend Runs
 
 Recommended production layout:
@@ -25,6 +31,13 @@ For security and reliability, a separate small Linux VPS is best. For early test
 Install Node.js 18 or newer on the backend VPS.
 
 The backend has no npm dependencies, so no heavy install is needed.
+
+On Ubuntu, the fastest setup is:
+
+```bash
+sudo bash deploy/install-ubuntu.sh api.asifbot.com
+sudo certbot --nginx -d api.asifbot.com
+```
 
 ## 3. Upload Backend
 
@@ -88,7 +101,7 @@ Expected:
 For Play Store and real phone usage, use HTTPS:
 
 ```text
-https://api.yourdomain.com
+https://api.asifbot.com
 ```
 
 You can put Nginx, Cloudflare Tunnel, or your hosting panel in front of the Node server.
@@ -106,8 +119,14 @@ app/build.gradle.kts
 Set:
 
 ```kotlin
-buildConfigField("String", "API_BASE_URL", "\"https://api.yourdomain.com\"")
+buildConfigField("String", "API_BASE_URL", "\"https://api.asifbot.com\"")
 buildConfigField("boolean", "DEMO_MODE", "false")
+```
+
+The app also supports passing this during build:
+
+```powershell
+gradle :app:assembleDebug -PASIFBOT_API_BASE_URL=https://api.asifbot.com -PASIFBOT_DEMO_MODE=false
 ```
 
 Then push to GitHub and download the new APK/AAB from Actions.
@@ -125,7 +144,7 @@ In the Android app:
 On the VPS bridge:
 
 ```powershell
-$env:ASIFBOT_API_BASE_URL="https://api.yourdomain.com"
+$env:ASIFBOT_API_BASE_URL="https://api.asifbot.com"
 $env:ASIFBOT_ACCOUNT_ID="BRG-6M8Q2A"
 $env:ASIFBOT_BRIDGE_TOKEN="BOT-3F7K-9D2M-Q8LP"
 node bridge-example.js

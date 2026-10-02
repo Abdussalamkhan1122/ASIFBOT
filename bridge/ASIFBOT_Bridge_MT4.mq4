@@ -7,7 +7,7 @@
 #property strict
 #property version "1.00"
 
-input string BackendUrl             = "https://api.yourdomain.com";
+input string BackendUrl             = "https://api.asifbot.com";
 input string AccountId              = "";
 input string BridgeToken            = "";
 input int    ManagedMagic           = 7777;
