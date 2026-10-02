@@ -35,7 +35,7 @@ jobs:
         run: |
           set +e
           gradle --no-daemon :app:assembleDebug :app:bundleRelease --stacktrace --info \
-            -PASIFBOT_API_BASE_URL="${ASIFBOT_API_BASE_URL:-https://api.asifbot.com}" \
+            -PASIFBOT_API_BASE_URL="${ASIFBOT_API_BASE_URL:-http://asifbot.duckdns.org:8080}" \
             -PASIFBOT_DEMO_MODE="${ASIFBOT_DEMO_MODE:-false}" 2>&1 | tee build-log.txt
           status=${PIPESTATUS[0]}
           if [ "$status" -ne 0 ]; then
